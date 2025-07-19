@@ -6,25 +6,31 @@ import pandas as pd
 st.title(":cup_with_straw: Customize your Smoothie! :cup_with_straw:")
 st.write("Choose the fruits you want in your custom smoothie.")
 
+# Name input
 name_on_order = st.text_input("Name on Smoothie: ", " ")
 st.write("The name on your smoothie will be: ", name_on_order)
 
+# Connect to Snowflake and fetch fruit options
 cnx = st.connection("snowflake")
 session = cnx.session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'), col('SEARCH_ON'))
+my_dataframe = session.table("smoothies.public.fruit_options").select(
+    col('FRUIT_NAME'), col('SEARCH_ON')
+)
 
-# Convert the SnowPark Dataframe to a Pandas Dataframe
+# Convert to pandas DataFrame for easier manipulation
 pd_df = my_dataframe.to_pandas()
 
-# Fruit list for multiselect
+# Create a list of fruit names for the multiselect
 fruit_list = pd_df["FRUIT_NAME"].tolist()
 
+# Allow user to select up to 5 fruits
 ingredients_list = st.multiselect(
     'Choose up to 5 ingredients: ',
     fruit_list,
     max_selections=5
 )
 
+# If user has selected fruits, show nutrition info and order option
 if ingredients_list:
     ingredients_string = ', '.join(ingredients_list)
 
@@ -39,8 +45,11 @@ if ingredients_list:
         except Exception as e:
             st.error(f"Failed to fetch data for {fruit_chosen}: {e}")
 
-    my_insert_stmt = f"""insert into smoothies.public.orders(ingredients, name_on_order)
-                         values ('{ingredients_string}', '{name_on_order}')"""
+    # Order submission
+    my_insert_stmt = f"""
+        insert into smoothies.public.orders(ingredients, name_on_order)
+        values ('{ingredients_string}', '{name_on_order}')
+    """
 
     time_to_insert = st.button('Submit Order')
 
